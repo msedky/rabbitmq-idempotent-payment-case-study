@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-payment
+  namespace: rabbitmq-idempotency
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-payment
+  template:
+    metadata:
+      labels:
+        app: postgres-payment
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: payment-postgres-secret
+          volumeMounts:
+            - name: payment-postgres-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: payment-postgres-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-payment
+  namespace: rabbitmq-idempotency
+spec:
+  selector:
+    app: postgres-payment
+  ports:
+    - port: 5432
+      targetPort: 5432

@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbit-mq-config
+  namespace: rabbitmq-idempotency
+data:
+  SPRING_RABBITMQ_HOST: rabbitmq
+  SPRING_RABBITMQ_PORT: "5672"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: payment-service-config
+  namespace: rabbitmq-idempotency
+data:
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-payment:5432/payment_db
+  PSP_BASE_URL: http://psp-mock-service:7072
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notification-service-config
+  namespace: rabbitmq-idempotency
+data:
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-notification:5432/notification_db

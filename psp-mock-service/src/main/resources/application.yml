@@ -1,0 +1,6 @@
+server:
+  port: 7072
+
+spring:
+  application:
+    name: psp-mock-service

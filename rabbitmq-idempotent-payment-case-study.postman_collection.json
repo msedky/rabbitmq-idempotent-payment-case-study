@@ -1,0 +1,342 @@
+{
+  "info": {
+    "_postman_id": "8ffb7c7b-fd76-44a8-b31a-9c6ace3d643c",
+    "name": "rabbitmq-idempotent-payment-case-study",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "3568702"
+  },
+  "item": [
+    {
+      "name": "payment-service",
+      "item": [
+        {
+          "name": "createPayment_SUCCESS",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "SOME_KEY",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"invoiceId\": \"INV-001\",\r\n    \"customerId\": \"CST-001-A\",\r\n    \"amount\": 500,\r\n    \"currency\": \"USD\",\r\n    \"pspScenario\": \"SUCCESS\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7071/api/v1/payments",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7071",
+              "path": [
+                "api",
+                "v1",
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "createPayment_DELAYED_SUCCESS",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"invoiceId\": \"INV-002\",\r\n    \"customerId\": \"CST-002-A\",\r\n    \"amount\": 350,\r\n    \"currency\": \"USD\",\r\n    \"pspScenario\": \"DELAYED_SUCCESS\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7071/api/v1/payments",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7071",
+              "path": [
+                "api",
+                "v1",
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "createPayment_TIMEOUT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"invoiceId\": \"INV-003\",\r\n    \"customerId\": \"CST-003-B\",\r\n    \"amount\": 800,\r\n    \"currency\": \"USD\",\r\n    \"pspScenario\": \"TIMEOUT\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7071/api/v1/payments",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7071",
+              "path": [
+                "api",
+                "v1",
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getPaymentById",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7071/api/v1/payments/:id",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7071",
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "9caaec9b-09b6-400e-8f7b-53378db93c40"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllPayments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:7071/api/v1/payments",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7071",
+              "path": [
+                "api",
+                "v1",
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "psp-mock-service",
+      "item": [
+        {
+          "name": "processPayment_SUCCESS",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"invoiceId\": \"INV-001\",\r\n    \"customerId\": \"CST-001-A\",\r\n    \"amount\": 500,\r\n    \"currency\": \"USD\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7072/api/v1/psp/payments",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7072",
+              "path": [
+                "api",
+                "v1",
+                "psp",
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "processPayment_DELAYED_SUCCESS",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-PSP-Scenario",
+                "value": "DELAYED_SUCCESS",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"invoiceId\": \"INV-002\",\r\n    \"customerId\": \"CST-002-A\",\r\n    \"amount\": 350,\r\n    \"currency\": \"USD\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7072/api/v1/psp/payments",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7072",
+              "path": [
+                "api",
+                "v1",
+                "psp",
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "processPayment_TIMEOUT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-PSP-Scenario",
+                "value": "TIMEOUT",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"invoiceId\": \"INV-003\",\r\n    \"customerId\": \"CST-003-B\",\r\n    \"amount\": 800,\r\n    \"currency\": \"USD\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7072/api/v1/psp/payments",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7072",
+              "path": [
+                "api",
+                "v1",
+                "psp",
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "notification-service",
+      "item": [
+        {
+          "name": "getNotificationById",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7073/api/v1/notifications/:id",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7073",
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "28be839f-4453-4284-a537-35f108ce4613"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllNotifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7073/api/v1/notifications",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7073",
+              "path": [
+                "api",
+                "v1",
+                "notifications"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

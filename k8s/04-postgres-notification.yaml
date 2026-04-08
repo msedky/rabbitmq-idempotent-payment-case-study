@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-notification
+  namespace: rabbitmq-idempotency
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-notification
+  template:
+    metadata:
+      labels:
+        app: postgres-notification
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: notification-postgres-secret
+          volumeMounts:
+            - name: notification-postgres-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: notification-postgres-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-notification
+  namespace: rabbitmq-idempotency
+spec:
+  selector:
+    app: postgres-notification
+  ports:
+    - port: 5432
+      targetPort: 5432
