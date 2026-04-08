@@ -1,3 +1,0 @@
-apply kubernetes not docker
-apply security in psp-mock-service
-may apply security for entire microservices
