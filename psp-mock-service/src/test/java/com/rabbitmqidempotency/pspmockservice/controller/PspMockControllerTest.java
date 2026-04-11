@@ -23,15 +23,6 @@ class PspMockControllerTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private PspPaymentRequest buildRequest() {
-        return PspPaymentRequest.builder()
-                .invoiceId("INV-123")
-                .customerId("CUST-456")
-                .amount(BigDecimal.valueOf(100))
-                .currency("USD")
-                .build();
-    }
-
     @Test
     void testSuccessScenario() throws Exception {
         mockMvc.perform(post("/api/v1/psp/payments")
@@ -52,5 +43,14 @@ class PspMockControllerTest {
                         .content(objectMapper.writeValueAsString(buildRequest())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SUCCESS"));
+    }
+
+    private PspPaymentRequest buildRequest() {
+        return PspPaymentRequest.builder()
+                .invoiceId("INV-123")
+                .customerId("CUST-456")
+                .amount(BigDecimal.valueOf(100))
+                .currency("USD")
+                .build();
     }
 }

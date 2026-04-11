@@ -2,7 +2,6 @@ package com.rabbitmqidempotency.pspmockservice.service.impl;
 
 import com.rabbitmqidempotency.pspmockservice.model.dto.request.PspPaymentRequest;
 import com.rabbitmqidempotency.pspmockservice.model.dto.response.PspPaymentResponse;
-import com.rabbitmqidempotency.pspmockservice.model.enums.PspScenario;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

@@ -2,8 +2,10 @@ package com.rabbitmqidempotency.paymentservice.exception.handler;
 
 import com.rabbitmqidempotency.paymentservice.exception.BadRequestException;
 import com.rabbitmqidempotency.paymentservice.exception.ConflictException;
+import com.rabbitmqidempotency.paymentservice.exception.PaymentNotFoundException;
 import com.rabbitmqidempotency.paymentservice.model.dto.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,7 +18,17 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleBadRequest(BadRequestException ex) {
         return ErrorResponse.builder()
-                .code("BAD_REQUEST")
+                .code(HttpStatus.BAD_REQUEST.toString())
+                .message(ex.getMessage())
+                .timestamp(OffsetDateTime.now())
+                .build();
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        return ErrorResponse.builder()
+                .code(HttpStatus.BAD_REQUEST.toString())
                 .message(ex.getMessage())
                 .timestamp(OffsetDateTime.now())
                 .build();
@@ -26,7 +38,17 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleConflict(ConflictException ex) {
         return ErrorResponse.builder()
-                .code("CONFLICT")
+                .code(HttpStatus.CONFLICT.toString())
+                .message(ex.getMessage())
+                .timestamp(OffsetDateTime.now())
+                .build();
+    }
+
+    @ExceptionHandler(PaymentNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handlePaymentNotFoundException(PaymentNotFoundException ex){
+        return ErrorResponse.builder()
+                .code(HttpStatus.NOT_FOUND.toString())
                 .message(ex.getMessage())
                 .timestamp(OffsetDateTime.now())
                 .build();

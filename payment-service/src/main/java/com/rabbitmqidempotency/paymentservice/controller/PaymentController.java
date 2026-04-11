@@ -28,12 +28,12 @@ public class PaymentController {
     }
 
     @GetMapping("/{paymentId}")
-    public PaymentResponse getPaymentById(@PathVariable UUID paymentId){
+    public PaymentResponse getPaymentById(@PathVariable UUID paymentId) {
         return paymentService.getById(paymentId);
     }
 
     @GetMapping
-    public List<PaymentResponse> getAllPayments(){
+    public List<PaymentResponse> getAllPayments() {
         return paymentService.getAll();
     }
 }

@@ -39,8 +39,7 @@ public class IdempotencyRecordEntity {
     @Column(name = "response_http_status")
     private Integer responseHttpStatus;
 
-    @Lob
-    @Column(name = "response_body")
+    @Column(columnDefinition = "TEXT")
     private String responseBody;
 
     @Column(name = "payment_id")
