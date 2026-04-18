@@ -22,7 +22,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"invoiceId\": \"INV-001\",\r\n    \"customerId\": \"CST-001-A\",\r\n    \"amount\": 500,\r\n    \"currency\": \"USD\",\r\n    \"pspScenario\": \"SUCCESS\"\r\n}",
+              "raw": "{\r\n    \"invoiceId\": \"INV-003\",\r\n    \"customerId\": \"CST-003-A\",\r\n    \"amount\": 500,\r\n    \"currency\": \"USD\",\r\n    \"pspScenario\": \"SUCCESS\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -52,7 +52,7 @@
             "header": [
               {
                 "key": "Idempotency-Key",
-                "value": "",
+                "value": "SOME_KEY",
                 "type": "text"
               }
             ],
@@ -88,13 +88,49 @@
             "header": [
               {
                 "key": "Idempotency-Key",
-                "value": "",
+                "value": "SOME_KEY",
                 "type": "text"
               }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\r\n    \"invoiceId\": \"INV-003\",\r\n    \"customerId\": \"CST-003-B\",\r\n    \"amount\": 800,\r\n    \"currency\": \"USD\",\r\n    \"pspScenario\": \"TIMEOUT\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7071/api/v1/payments",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7071",
+              "path": [
+                "api",
+                "v1",
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "createPayment_FAILURE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "SOME_KEY",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"invoiceId\": \"INV-003\",\r\n    \"customerId\": \"CST-003-B\",\r\n    \"amount\": 800,\r\n    \"currency\": \"USD\",\r\n    \"pspScenario\": \"FAILURE\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -253,6 +289,43 @@
               {
                 "key": "X-PSP-Scenario",
                 "value": "TIMEOUT",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"invoiceId\": \"INV-003\",\r\n    \"customerId\": \"CST-003-B\",\r\n    \"amount\": 800,\r\n    \"currency\": \"USD\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7072/api/v1/psp/payments",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7072",
+              "path": [
+                "api",
+                "v1",
+                "psp",
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "processPayment_FAILURE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-PSP-Scenario",
+                "value": "FAILURE",
                 "type": "text"
               }
             ],
