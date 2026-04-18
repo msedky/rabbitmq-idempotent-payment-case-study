@@ -739,4 +739,86 @@ class PaymentControllerIT {
         assertEquals(1, paymentRepository.count());
         assertEquals(1, idempotencyRecordRepository.count());
     }
+
+    @Test
+    void create_shouldRetryFailedPayment_whenPspRecovers() throws Exception {
+        CreatePaymentRequest request = validPaymentRequest("TIMEOUT");
+
+        PspPaymentResponse successResponse = PspPaymentResponse.builder()
+                .providerReference("PSP-RETRY-SUCCESS")
+                .status("SUCCESS")
+                .build();
+
+        when(pspClient.processPayment(
+                PspPaymentRequest.builder()
+                        .invoiceId(request.getInvoiceId())
+                        .customerId(request.getCustomerId())
+                        .amount(request.getAmount())
+                        .currency(request.getCurrency())
+                        .pspScenario(request.getPspScenario())
+                        .build()
+        )).thenThrow(new ResourceAccessException("PSP timeout"))
+                .thenReturn(successResponse);
+
+        // First call - should fail with FAILED_RETRYABLE
+        mockMvc.perform(post("/api/v1/payments")
+                        .contentType(APPLICATION_JSON)
+                        .header(IDEMPOTENCY_KEY_HEADER, "RETRY-KEY-1")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.paymentId").isNotEmpty())
+                .andExpect(jsonPath("$.invoiceId").value(request.getInvoiceId().toString()))
+                .andExpect(jsonPath("$.customerId").value(request.getCustomerId()))
+                .andExpect(jsonPath("$.amount").value(request.getAmount().doubleValue()))
+                .andExpect(jsonPath("$.currency").value(request.getCurrency()))
+                .andExpect(jsonPath("$.status").value(PaymentStatus.FAILED_RETRYABLE.toString()))
+                .andExpect(jsonPath("$.providerReference").isEmpty())
+                .andExpect(jsonPath("$.failureReason").value("PSP timeout"))
+                .andExpect(jsonPath("$.createdAt").isNotEmpty())
+                .andExpect(jsonPath("$.updatedAt").isNotEmpty())
+                .andReturn();
+
+        // Verify no event published
+        verify(paymentEventPublisher, never()).publishPaymentCompleted(any());
+
+        // Check payment and idempotency saved with FAILED_RETRYABLE
+        assertEquals(1, paymentRepository.count());
+        PaymentEntity payment = paymentRepository.findAll().get(0);
+        assertEquals(PaymentStatus.FAILED_RETRYABLE, payment.getStatus());
+
+        IdempotencyRecordEntity idempotency = idempotencyRecordRepository.findAll().get(0);
+        assertEquals(IdempotencyStatus.FAILED_RETRYABLE, idempotency.getStatus());
+
+        // Second call with same key - should succeed
+        mockMvc.perform(post("/api/v1/payments")
+                        .contentType(APPLICATION_JSON)
+                        .header(IDEMPOTENCY_KEY_HEADER, "RETRY-KEY-1")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.paymentId").isNotEmpty())
+                .andExpect(jsonPath("$.invoiceId").value(request.getInvoiceId().toString()))
+                .andExpect(jsonPath("$.customerId").value(request.getCustomerId()))
+                .andExpect(jsonPath("$.amount").value(request.getAmount().doubleValue()))
+                .andExpect(jsonPath("$.currency").value(request.getCurrency()))
+                .andExpect(jsonPath("$.status").value(PaymentStatus.SUCCESS.toString()))
+                .andExpect(jsonPath("$.providerReference").value(successResponse.getProviderReference()))
+                .andExpect(jsonPath("$.failureReason").isEmpty())
+                .andExpect(jsonPath("$.createdAt").isNotEmpty())
+                .andExpect(jsonPath("$.updatedAt").isNotEmpty())
+                .andReturn();
+
+
+        // Verify event published once
+        verify(paymentEventPublisher, times(1)).publishPaymentCompleted(any());
+
+        // Check only one payment and idempotency, now updated to SUCCESS and COMPLETED
+        assertEquals(1, paymentRepository.count());
+        PaymentEntity updatedPayment = paymentRepository.findAll().get(0);
+        assertEquals(PaymentStatus.SUCCESS, updatedPayment.getStatus());
+        assertEquals(successResponse.getProviderReference(), updatedPayment.getProviderReference());
+
+        IdempotencyRecordEntity updatedIdempotency = idempotencyRecordRepository.findAll().get(0);
+        assertEquals(IdempotencyStatus.COMPLETED, updatedIdempotency.getStatus());
+    }
 }
