@@ -22,7 +22,7 @@ public class PostProcessPaymentFailed implements PostProcessPaymentStrategy {
 
     @Override
     public PaymentResponse execute(PspPaymentResponse pspResponse, PaymentEntity payment, IdempotencyRecordEntity idempotencyRecord, Throwable throwable) {
-        paymentFailureRecorder.recordFailure(payment, idempotencyRecord, throwable.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+        paymentFailureRecorder.recordFailure(payment, idempotencyRecord, throwable != null ? throwable.getMessage() : "Payment Failed", HttpStatus.INTERNAL_SERVER_ERROR.value());
         PaymentResponse paymentResponse = paymentMapper.toResponse(payment);
         return paymentResponse;
     }

@@ -102,7 +102,7 @@ public class PaymentServiceImpl implements PaymentService {
                             .pspScenario(request.getPspScenario())
                             .build()
             );
-            pspStatus = PspStatus.SUCCESS;
+            pspStatus =  pspResponse.getStatus().toUpperCase().contains("SUCCESS") ? PspStatus.SUCCESS : PspStatus.FAILED;
 
         } catch (ResourceAccessException ex) {
             exception = ex;

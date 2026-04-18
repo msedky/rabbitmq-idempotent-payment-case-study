@@ -28,6 +28,8 @@ public class PspMockServiceImpl implements PspMockService {
             case DELAYED_SUCCESS -> {
                 sleepSeconds(8);
                 return buildSuccessResponse("Payment processed successfully after delay");
+            }case FAILURE -> {
+                return buildFailureResponse();
             }
             case TIMEOUT -> {
                 sleepSeconds(20);
@@ -55,6 +57,15 @@ public class PspMockServiceImpl implements PspMockService {
                 .providerReference("PSP-" + UUID.randomUUID())
                 .status("SUCCESS")
                 .message(message)
+                .processedAt(OffsetDateTime.now())
+                .build();
+    }
+
+    private PspPaymentResponse buildFailureResponse(){
+        return PspPaymentResponse.builder()
+                .providerReference("PSP-" + UUID.randomUUID())
+                .status("FAILURE")
+                .message("Payment FAILURE Occurred to this Transaction")
                 .processedAt(OffsetDateTime.now())
                 .build();
     }

@@ -52,9 +52,10 @@ flowchart LR
 
     PaymentService --> PS1 --> PS2 --> PS3
 
-    PS3 -->|Existing SAME request| ReturnCachedResponse
+    PS3 -->|Existing SAME request| ReturnStoredResponse
     PS3 -->|Different request| ConflictError
     PS3 -->|New request| PS4
+	PS3 -->|FAILED_RETRYABLE| PS5
 
     PS4 --> PS5 --> PSPMockService
 
@@ -78,18 +79,26 @@ flowchart LR
 1. The client sends a request to create a payment with an `Idempotency-Key`.
 2. `payment-service` validates the key and generates a request hash.
 3. The system checks if an idempotency record already exists:
-   - If same request → return cached response
+   - If same request → return stored response,
+					   unless status is `FAILED_RETRYABLE` → re-attempt PSP
    - If different request → return `409 Conflict`
    - If new request → proceed
 4. A payment record is created with status `PENDING`.
 5. `payment-service` calls the external PSP (`psp-mock-service`).
 6. Based on PSP response:
-   - SUCCESS → payment marked as `COMPLETED`
-   - FAILURE → payment marked as `FAILED`
-   - TIMEOUT → handled accordingly
-7. The final response is stored in the idempotency table.
-8. A `PaymentCompletedEvent` is published to RabbitMQ.
-9. `notification-service` consumes the event and stores notification data.
+   - SUCCESS → payment marked as `SUCCESS`, 
+               idempotency record marked as `COMPLETED`
+   - DELAYED_SUCCESS → payment marked as `SUCCESS`,
+                       idempotency record marked as `COMPLETED`
+   - FAILURE → payment marked as `FAILED`,
+               idempotency record marked as `FAILED`
+   - TIMEOUT → payment marked as `FAILED_RETRYABLE`,
+               idempotency record marked as `FAILED_RETRYABLE`,
+               client may retry with same `Idempotency-Key`
+7. The final response is stored in the idempotency record.
+8. If payment status is `SUCCESS`:
+   - A `PaymentCompletedEvent` is published to RabbitMQ.
+   - `notification-service` consumes the event and stores notification data.
 
 ---
 
@@ -106,8 +115,9 @@ flowchart LR
 ### Retry (Same Request)
 
 - Same key + same request body
-- Cached response is returned
-- ❌ No duplicate processing
+- If status is `COMPLETED` or `FAILED` → stored response is returned
+- If status is `FAILED_RETRYABLE` → PSP is called again
+- ❌ No duplicate payment is created in any case
 
 ---
 
@@ -127,11 +137,23 @@ flowchart LR
 
 ---
 
-### PSP Delay / Timeout
+### PSP Delayed Response
 
-- External PSP responds slowly or times out
-- Client retries using same key
-- System ensures no duplicate payment is created
+- PSP responds slowly but eventually returns success
+- Payment is marked as `SUCCESS`
+- Idempotency record is marked as `COMPLETED`
+- ✅ Payment completes normally despite the delay
+
+---
+
+### PSP Recovery Retry
+
+- Same key + same request body
+- Previous attempt failed with PSP timeout
+- Idempotency status is `FAILED_RETRYABLE`
+- ✅ System re-attempts the PSP call
+- If PSP is now available → payment completes successfully
+- ✅ No duplicate payment is created
 
 ---
 
@@ -139,11 +161,12 @@ flowchart LR
 
 This project simulates real-world failure conditions that commonly occur in distributed systems.
 
-### 1. Network Timeout
+### 1. PSP Delayed Response
 
-- PSP call times out
-- Client retries the same request with the same `Idempotency-Key`
-- System returns cached result or continues processing safely
+- PSP responds slowly but eventually returns success
+- Payment completes normally with status `SUCCESS`
+- Idempotency record marked as `COMPLETED`
+- ✅ No intervention required
 
 ---
 
@@ -172,10 +195,15 @@ This project simulates real-world failure conditions that commonly occur in dist
 
 ---
 
-### 5. PSP Delay / Late Response
+### 5. Network Timeout / PSP Recovery
 
-- External PSP responds late
-- System ensures consistent state using stored idempotency records
+- PSP call times out — no response received
+- Payment is saved with status `FAILED_RETRYABLE`
+- Idempotency record is saved with status `FAILED_RETRYABLE`
+- Client retries later using the **same** `Idempotency-Key`
+- System detects `FAILED_RETRYABLE` and re-calls the PSP
+- If PSP recovers → payment completes normally
+- ✅ No duplicate payment is created
 
 ---
 
