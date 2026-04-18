@@ -1,6 +1,7 @@
 package com.rabbitmqidempotency.paymentservice.service.strategy;
 
 import com.rabbitmqidempotency.paymentservice.client.dto.PspPaymentResponse;
+import com.rabbitmqidempotency.paymentservice.mapper.PaymentMapper;
 import com.rabbitmqidempotency.paymentservice.model.dto.response.PaymentResponse;
 import com.rabbitmqidempotency.paymentservice.model.entity.IdempotencyRecordEntity;
 import com.rabbitmqidempotency.paymentservice.model.entity.PaymentEntity;
@@ -17,10 +18,12 @@ import org.springframework.stereotype.Service;
 public class PostProcessPaymentFailed implements PostProcessPaymentStrategy {
 
     private final PaymentFailureRecorder paymentFailureRecorder;
+    private final PaymentMapper paymentMapper;
 
     @Override
     public PaymentResponse execute(PspPaymentResponse pspResponse, PaymentEntity payment, IdempotencyRecordEntity idempotencyRecord, Throwable throwable) {
         paymentFailureRecorder.recordFailure(payment, idempotencyRecord, throwable.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
-        throw new RuntimeException(throwable);
+        PaymentResponse paymentResponse = paymentMapper.toResponse(payment);
+        return paymentResponse;
     }
 }

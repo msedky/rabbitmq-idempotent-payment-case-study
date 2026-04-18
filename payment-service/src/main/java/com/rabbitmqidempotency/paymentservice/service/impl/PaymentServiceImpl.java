@@ -76,11 +76,17 @@ public class PaymentServiceImpl implements PaymentService {
             PaymentEntity existingPayment = paymentRepository.findById(existingRecord.getPaymentId())
                     .orElseThrow(() -> new ConflictException("Associated payment record was not found"));
 
+            if (existingRecord.getStatus() == IdempotencyStatus.FAILED_RETRYABLE) {
+                return callPsp(request, existingPayment, existingRecord);
+            }
+
             return paymentMapper.toResponse(existingPayment);
         }
 
-        PaymentEntity payment = pendingPaymentIdempotency.getPayment();
-        IdempotencyRecordEntity idempotencyRecord = pendingPaymentIdempotency.getIdempotencyRecord();
+        return callPsp(request, pendingPaymentIdempotency.getPayment(), pendingPaymentIdempotency.getIdempotencyRecord());
+    }
+
+    private PaymentResponse callPsp(CreatePaymentRequest request, PaymentEntity payment, IdempotencyRecordEntity idempotencyRecord) {
 
         Exception exception = null;
         PspStatus pspStatus;

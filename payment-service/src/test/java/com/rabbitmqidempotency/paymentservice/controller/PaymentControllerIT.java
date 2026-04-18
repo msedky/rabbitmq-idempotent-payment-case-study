@@ -23,8 +23,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.ResourceAccessException;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -198,13 +196,25 @@ class PaymentControllerIT {
                         .contentType(APPLICATION_JSON)
                         .header(IDEMPOTENCY_KEY_HEADER, "KEY-TIMEOUT-1")
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.paymentId").isNotEmpty())
+                .andExpect(jsonPath("$.invoiceId").value(request.getInvoiceId().toString()))
+                .andExpect(jsonPath("$.customerId").value(request.getCustomerId()))
+                .andExpect(jsonPath("$.amount").value(request.getAmount().doubleValue()))
+                .andExpect(jsonPath("$.currency").value(request.getCurrency()))
+                .andExpect(jsonPath("$.status").value(PaymentStatus.FAILED_RETRYABLE.toString()))
+                .andExpect(jsonPath("$.providerReference").isEmpty())
+                .andExpect(jsonPath("$.failureReason").value("PSP timeout"))
+                .andExpect(jsonPath("$.createdAt").isNotEmpty())
+                .andExpect(jsonPath("$.updatedAt").isNotEmpty());
 
         assertEquals(1, paymentRepository.count());
 
         PaymentEntity savedPayment = paymentRepository.findAll().get(0);
-        assertEquals(PaymentStatus.FAILED, savedPayment.getStatus());
-        assertEquals("PSP timeout", savedPayment.getFailureReason());
+
+        IdempotencyRecordEntity savedIdempotency = idempotencyRecordRepository.findAll().get(0);
+        assertEquals(savedIdempotency.getPaymentId(), savedPayment.getId());
+        assertEquals(savedIdempotency.getStatus(), IdempotencyStatus.FAILED_RETRYABLE);
 
         verify(paymentEventPublisher, never()).publishPaymentCompleted(any());
         assertEquals(1, idempotencyRecordRepository.count());
@@ -228,13 +238,25 @@ class PaymentControllerIT {
                         .contentType(APPLICATION_JSON)
                         .header(IDEMPOTENCY_KEY_HEADER, "KEY-INVALID-1")
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.paymentId").isNotEmpty())
+                .andExpect(jsonPath("$.invoiceId").value(request.getInvoiceId().toString()))
+                .andExpect(jsonPath("$.customerId").value(request.getCustomerId()))
+                .andExpect(jsonPath("$.amount").value(request.getAmount().doubleValue()))
+                .andExpect(jsonPath("$.currency").value(request.getCurrency()))
+                .andExpect(jsonPath("$.status").value(PaymentStatus.FAILED.toString()))
+                .andExpect(jsonPath("$.providerReference").isEmpty())
+                .andExpect(jsonPath("$.failureReason").value("PSP rejected request"))
+                .andExpect(jsonPath("$.createdAt").isNotEmpty())
+                .andExpect(jsonPath("$.updatedAt").isNotEmpty());
 
         assertEquals(1, paymentRepository.count());
 
         PaymentEntity savedPayment = paymentRepository.findAll().get(0);
-        assertEquals(PaymentStatus.FAILED, savedPayment.getStatus());
-        assertEquals("PSP rejected request", savedPayment.getFailureReason());
+
+        IdempotencyRecordEntity savedIdempotency = idempotencyRecordRepository.findAll().get(0);
+        assertEquals(savedIdempotency.getPaymentId(), savedPayment.getId());
+        assertEquals(savedIdempotency.getStatus(), IdempotencyStatus.FAILED);
 
         verify(paymentEventPublisher, never()).publishPaymentCompleted(any());
     }

@@ -8,7 +8,6 @@ import com.rabbitmqidempotency.paymentservice.repository.IdempotencyRecordReposi
 import com.rabbitmqidempotency.paymentservice.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.function.Function;
@@ -21,7 +20,7 @@ public class PaymentFailureRecorder {
     private final IdempotencyRecordRepository idempotencyRecordRepository;
     private final Function<String, String> buildFailureResponseBodyHelper;
 
-    @Transactional/*(propagation = Propagation.REQUIRES_NEW)*/
+    @Transactional
     public void recordFailure(
             PaymentEntity payment,
             IdempotencyRecordEntity idempotencyRecord,
