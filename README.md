@@ -59,9 +59,10 @@ flowchart LR
 
     PS4 --> PS5 --> PSPMockService
 
-    PSPMockService --> PS6 --> PS7 --> PS8
-
-    PS8 --> RabbitMQ
+    PSPMockService --> PS6 --> PS7
+	PS7 -->|SUCCESS| PS8
+	PS7 -->|FAILED or FAILED_RETRYABLE| ReturnResponse
+	PS8 --> RabbitMQ
 
     RabbitMQ --> NotificationService
 
